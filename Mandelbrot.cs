@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -15,7 +16,6 @@ namespace Mandelbrot_Namespace {
 		private Label ScaleLabel;
 		private Label MaxTriesLabel;
 		private CheckBox AutoUpdateCheckBox;
-		private CheckBox ColorCheckBox;
 		private ComboBox SelectExampleList;
 		private ComboBox SelectColorSchemeList;
 		private Button RecalculateButton;
@@ -42,7 +42,6 @@ namespace Mandelbrot_Namespace {
 			ScaleLabel = new Label();
 			RecalculateButton = new Button();
 			AutoUpdateCheckBox = new CheckBox();
-			ColorCheckBox = new CheckBox();
 			SelectExampleList = new ComboBox();
 			SelectColorSchemeList = new ComboBox();
 			SuspendLayout();
@@ -146,16 +145,6 @@ namespace Mandelbrot_Namespace {
 			AutoUpdateCheckBox.Text = "Auto Refresh";
 			AutoUpdateCheckBox.UseVisualStyleBackColor = true;
 			// 
-			// ColorCheckBox
-			// 
-			ColorCheckBox.AutoSize = true;
-			ColorCheckBox.Location = new Point(237, 77);
-			ColorCheckBox.Name = "ColorCheckBox";
-			ColorCheckBox.Size = new Size(73, 24);
-			ColorCheckBox.TabIndex = 10;
-			ColorCheckBox.Text = "Colors";
-			ColorCheckBox.UseVisualStyleBackColor = true;
-			// 
 			// SelectExampleList
 			// 
 			SelectExampleList.FormattingEnabled = true;
@@ -170,7 +159,7 @@ namespace Mandelbrot_Namespace {
 			// SelectColorSchemeList
 			// 
 			SelectColorSchemeList.FormattingEnabled = true;
-			SelectColorSchemeList.Items.AddRange(new object[] { "Black and White", "Red Green Blue", "Yellow Orange Red", "Blue Cyaan Green" });
+			SelectColorSchemeList.Items.AddRange(new object[] { "Black and White", "Red Green Blue", "Yellow Orange Red", "Blue Cyan Green" });
 			SelectColorSchemeList.Location = new Point(237, 106);
 			SelectColorSchemeList.Name = "SelectColorSchemeList";
 			SelectColorSchemeList.Size = new Size(138, 28);
@@ -183,7 +172,6 @@ namespace Mandelbrot_Namespace {
 			ClientSize = new Size(420, 550);
 			Controls.Add(SelectColorSchemeList);
 			Controls.Add(SelectExampleList);
-			Controls.Add(ColorCheckBox);
 			Controls.Add(AutoUpdateCheckBox);
 			Controls.Add(ScaleLabel);
 			Controls.Add(RecalculateButton);
@@ -219,7 +207,28 @@ namespace Mandelbrot_Namespace {
 				for (int j = 0; j < 400; j++) {
 					float MandelNumberX = (i - 200) * Scale + StartX;
 					float MandelNumberY = (j - 200) * Scale + StartY;
-					Color Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 2 == 0) ? Color.Black : Color.White;
+					Color Color;
+					switch (SelectColorSchemeList.SelectedItem) {
+						case "Black and White":
+							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 2 == 0) ? Color.Black : Color.White;
+							break;
+						case "Red Green Blue":
+							Dictionary<int, Color> RGBPairs = new() { { 0, Color.Red }, { 1, Color.Green }, {2, Color.Blue } };
+							Color = RGBPairs.GetValueOrDefault(CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 3);
+							break;
+						case "Yellow Orange Red":
+							Dictionary<int, Color> YORPairs = new() { { 0, Color.Yellow }, { 1, Color.Orange }, { 2, Color.Red } };
+							Color = YORPairs.GetValueOrDefault(CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 3);
+							break;
+						case "Blue Cyan Green":
+							Dictionary<int, Color> keyValuePairs = new() { { 0, Color.Blue }, { 1, Color.Cyan }, { 2, Color.Green } };
+							Color = keyValuePairs.GetValueOrDefault(CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 3);
+							break;
+						default:
+							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 2 == 0) ? Color.Black : Color.White;
+							break;
+					}
+					
 					MandelGrid.SetPixel(i, j, Color);
 				}
 			}
@@ -228,14 +237,11 @@ namespace Mandelbrot_Namespace {
 		// Returns the mandelnumber, don't change 
 		private static int CalcMandelNumber(float x, float y, int MaxTries) {
 			int Tries = 0;
-			float Distance = 0;
 			float a = 0, b = 0;
-			while (Tries < MaxTries && Distance <= 2) {
-				Tries++;
+			for(; Tries < MaxTries && Math.Sqrt(a * a + b * b) <= 2; ++Tries) {
 				float olda = a;
 				a = a * a - b * b + x;
 				b = 2 * olda * b + y;
-				Distance = (float)Math.Sqrt(a * a + b * b);
 			}
 			return Tries;
 		}
@@ -265,23 +271,14 @@ namespace Mandelbrot_Namespace {
 					StartYInput.Text = "0";
 					ScaleInput.Text = "0.01";
 					MaxTriesInput.Text = "100";
-					ColorCheckBox.Checked = false;
+					SelectColorSchemeList.SelectedIndex = 0;
 					break;
 			}
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}
 
 		private void SelectColorSchemeListChanged(object sender, EventArgs e) {
-			switch (SelectColorSchemeList.SelectedItem) {
-				case "Black and White":
-					break;
-				case "Red Green Blue":
-					break;
-				case "Yellow Orange Red":
-					break;
-				case "Blue Cyaan Green":
-					break;
-			}
+			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}
 	}
 }
