@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using Microsoft.Toolkit.Uwp.Helpers;
 
 namespace Mandelbrot_Namespace {
 	class Mandebrot_class : Form {
@@ -21,7 +22,6 @@ namespace Mandelbrot_Namespace {
 		private Button RecalculateButton;
 		public Mandebrot_class() {
 			Text = "Mandelbrot";
-			ClientSize = new Size(600, 420);
 			InitializeComponent();
 			// Leave here, otherwise the Visual Studio Designer interferes with it and removes it
 			MandelDisplay.Image = MandelGrid;
@@ -125,9 +125,9 @@ namespace Mandelbrot_Namespace {
 			// 
 			// RecalculateButton
 			// 
-			RecalculateButton.Location = new Point(335, 72);
+			RecalculateButton.Location = new Point(237, 72);
 			RecalculateButton.Name = "RecalculateButton";
-			RecalculateButton.Size = new Size(73, 32);
+			RecalculateButton.Size = new Size(116, 32);
 			RecalculateButton.TabIndex = 7;
 			RecalculateButton.Text = "Go";
 			RecalculateButton.UseVisualStyleBackColor = true;
@@ -148,10 +148,10 @@ namespace Mandelbrot_Namespace {
 			// SelectExampleList
 			// 
 			SelectExampleList.FormattingEnabled = true;
-			SelectExampleList.Items.AddRange(new object[] { "Default" });
+			SelectExampleList.Items.AddRange(new object[] { "Default", "Heat", "Cyclone", "Snowflake", "Star" });
 			SelectExampleList.Location = new Point(10, 106);
 			SelectExampleList.Name = "SelectExampleList";
-			SelectExampleList.Size = new Size(147, 28);
+			SelectExampleList.Size = new Size(145, 28);
 			SelectExampleList.TabIndex = 11;
 			SelectExampleList.Text = "Select Example";
 			SelectExampleList.SelectedIndexChanged += SelectExampleListChanged;
@@ -159,10 +159,10 @@ namespace Mandelbrot_Namespace {
 			// SelectColorSchemeList
 			// 
 			SelectColorSchemeList.FormattingEnabled = true;
-			SelectColorSchemeList.Items.AddRange(new object[] { "Black and White", "Red Green Blue", "Yellow Orange Red", "Blue Cyan Green" });
+			SelectColorSchemeList.Items.AddRange(new object[] { "Black and White", "Red Green Blue", "Yellow Orange Red", "Hue Range" });
 			SelectColorSchemeList.Location = new Point(237, 106);
 			SelectColorSchemeList.Name = "SelectColorSchemeList";
-			SelectColorSchemeList.Size = new Size(138, 28);
+			SelectColorSchemeList.Size = new Size(171, 28);
 			SelectColorSchemeList.TabIndex = 12;
 			SelectColorSchemeList.Text = "Select Color Scheme";
 			SelectColorSchemeList.SelectedIndexChanged += SelectColorSchemeListChanged;
@@ -213,16 +213,19 @@ namespace Mandelbrot_Namespace {
 							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 2 == 0) ? Color.Black : Color.White;
 							break;
 						case "Red Green Blue":
-							Dictionary<int, Color> RGBPairs = new() { { 0, Color.Red }, { 1, Color.Green }, {2, Color.Blue } };
-							Color = RGBPairs.GetValueOrDefault(CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 3);
+							double hue2 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 128) / 128d;
+							Windows.UI.Color c2 = ColorHelper.FromHsv(hue2 * 360, 1.0, 1.0, 1.0);
+							Color = Color.FromArgb(c2.A, c2.R, c2.G, c2.B);
 							break;
 						case "Yellow Orange Red":
-							Dictionary<int, Color> YORPairs = new() { { 0, Color.Yellow }, { 1, Color.Orange }, { 2, Color.Red } };
-							Color = YORPairs.GetValueOrDefault(CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 3);
+							double hue1 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 60) / 256d;
+							Windows.UI.Color c1 = ColorHelper.FromHsv(hue1 * 360, 1.0, 1.0, 1.0);
+							Color = Color.FromArgb(c1.A, c1.R, c1.G, c1.B);
 							break;
-						case "Blue Cyan Green":
-							Dictionary<int, Color> keyValuePairs = new() { { 0, Color.Blue }, { 1, Color.Cyan }, { 2, Color.Green } };
-							Color = keyValuePairs.GetValueOrDefault(CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 3);
+						case "Hue Range":
+							double hue = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 256) / 256d; 
+							Windows.UI.Color  c = ColorHelper.FromHsv(hue * 360, 1.0, 1.0, 1.0);
+							Color = Color.FromArgb(c.A, c.R, c.G, c.B);
 							break;
 						default:
 							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 2 == 0) ? Color.Black : Color.White;
@@ -273,6 +276,35 @@ namespace Mandelbrot_Namespace {
 					MaxTriesInput.Text = "100";
 					SelectColorSchemeList.SelectedIndex = 0;
 					break;
+				case "Heat":
+					StartXInput.Text = "-0.014";
+					StartYInput.Text = "0.74";
+					ScaleInput.Text = "3.1E-5";
+					MaxTriesInput.Text = "400";
+					SelectColorSchemeList.SelectedIndex = 3;
+					break;
+				case "Cyclone":
+					StartXInput.Text = "-0.0127";
+					StartYInput.Text = "0.737";
+					ScaleInput.Text = "4.5E-5";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 0;
+					break;
+				case "Snowflake":
+					StartXInput.Text = "0.3598";
+					StartYInput.Text = "-0.58693";
+					ScaleInput.Text = "5E-6";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 3;
+					break;
+				case "Star":
+					StartXInput.Text = "-0.0419096";
+					StartYInput.Text = "-0.98823553";
+					ScaleInput.Text = "3.0803384674982227E-07";
+					MaxTriesInput.Text = "600";
+					SelectColorSchemeList.SelectedIndex = 1;
+					break;
+
 			}
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}
