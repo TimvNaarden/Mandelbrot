@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Toolkit.Uwp.Helpers;
 
@@ -19,6 +20,9 @@ namespace Mandelbrot_Namespace {
 		private CheckBox AutoUpdateCheckBox;
 		private ComboBox SelectExampleList;
 		private ComboBox SelectColorSchemeList;
+		private Label MultiBrotlabel;
+		private TextBox MultiBrotInput;
+		private CheckBox MultiBrotCheckBox;
 		private Button RecalculateButton;
 		public Mandebrot_class() {
 			Text = "Mandelbrot";
@@ -44,6 +48,9 @@ namespace Mandelbrot_Namespace {
 			AutoUpdateCheckBox = new CheckBox();
 			SelectExampleList = new ComboBox();
 			SelectColorSchemeList = new ComboBox();
+			MultiBrotlabel = new Label();
+			MultiBrotInput = new TextBox();
+			MultiBrotCheckBox = new CheckBox();
 			SuspendLayout();
 			// 
 			// StartXInput
@@ -84,7 +91,7 @@ namespace Mandelbrot_Namespace {
 			// 
 			// MandelDisplay
 			// 
-			MandelDisplay.Location = new Point(8, 141);
+			MandelDisplay.Location = new Point(10, 195);
 			MandelDisplay.Name = "MandelDisplay";
 			MandelDisplay.Size = new Size(400, 400);
 			MandelDisplay.TabIndex = 6;
@@ -148,8 +155,8 @@ namespace Mandelbrot_Namespace {
 			// SelectExampleList
 			// 
 			SelectExampleList.FormattingEnabled = true;
-			SelectExampleList.Items.AddRange(new object[] { "Default", "Heat", "Cyclone", "Snowflake", "Star" });
-			SelectExampleList.Location = new Point(10, 106);
+			SelectExampleList.Items.AddRange(new object[] { "Default", "Heat", "Cyclone", "Snowflake", "Star", "Chinese vuur", "Rode zee", "Paarse zee", "Vuur stoot", "Sikkels", "Donker bos" });
+			SelectExampleList.Location = new Point(12, 141);
 			SelectExampleList.Name = "SelectExampleList";
 			SelectExampleList.Size = new Size(145, 28);
 			SelectExampleList.TabIndex = 11;
@@ -160,16 +167,48 @@ namespace Mandelbrot_Namespace {
 			// 
 			SelectColorSchemeList.FormattingEnabled = true;
 			SelectColorSchemeList.Items.AddRange(new object[] { "Black and White", "Red Green Blue", "Yellow Orange Red", "Hue Range" });
-			SelectColorSchemeList.Location = new Point(237, 106);
+			SelectColorSchemeList.Location = new Point(237, 141);
 			SelectColorSchemeList.Name = "SelectColorSchemeList";
 			SelectColorSchemeList.Size = new Size(171, 28);
 			SelectColorSchemeList.TabIndex = 12;
 			SelectColorSchemeList.Text = "Select Color Scheme";
 			SelectColorSchemeList.SelectedIndexChanged += SelectColorSchemeListChanged;
 			// 
+			// MultiBrotlabel
+			// 
+			MultiBrotlabel.AutoSize = true;
+			MultiBrotlabel.Location = new Point(10, 113);
+			MultiBrotlabel.Name = "MultiBrotlabel";
+			MultiBrotlabel.Size = new Size(82, 20);
+			MultiBrotlabel.TabIndex = 13;
+			MultiBrotlabel.Text = "MuiltiBrot: ";
+			// 
+			// MultiBrotInput
+			// 
+			MultiBrotInput.Location = new Point(120, 110);
+			MultiBrotInput.Name = "MultiBrotInput";
+			MultiBrotInput.Size = new Size(100, 27);
+			MultiBrotInput.TabIndex = 14;
+			MultiBrotInput.Text = "3";
+			MultiBrotInput.TextChanged += InputChanged;
+			// 
+			// MultiBrotCheckBox
+			// 
+			MultiBrotCheckBox.AutoSize = true;
+			MultiBrotCheckBox.Location = new Point(237, 112);
+			MultiBrotCheckBox.Name = "MultiBrotCheckBox";
+			MultiBrotCheckBox.Size = new Size(142, 24);
+			MultiBrotCheckBox.TabIndex = 15;
+			MultiBrotCheckBox.Text = "Enable MultiBrot";
+			MultiBrotCheckBox.UseVisualStyleBackColor = true;
+			MultiBrotCheckBox.CheckedChanged += InputChanged;
+			// 
 			// Mandebrot_class
 			// 
-			ClientSize = new Size(420, 550);
+			ClientSize = new Size(420, 604);
+			Controls.Add(MultiBrotCheckBox);
+			Controls.Add(MultiBrotInput);
+			Controls.Add(MultiBrotlabel);
 			Controls.Add(SelectColorSchemeList);
 			Controls.Add(SelectExampleList);
 			Controls.Add(AutoUpdateCheckBox);
@@ -198,10 +237,15 @@ namespace Mandelbrot_Namespace {
 					MandelGrid.SetPixel(i, j, Color.White);
 				}
 			}
+			float MultiBrot = 2;
 			// Get the other input variables
 			if (!(float.TryParse(StartXInput.Text.Replace('.', ','), out float StartX))) StartX = 0;
 			if (!(float.TryParse(StartYInput.Text.Replace('.', ','), out float StartY))) StartY = 0;
 			if (!(int.TryParse(MaxTriesInput.Text.Replace('.', ','), out int MaxTries))) MaxTries = 100;
+			if (MultiBrotCheckBox.Checked) {
+				if (!(float.TryParse(MultiBrotInput.Text.Replace('.', ','), out MultiBrot))) MultiBrot = 3;
+			}
+			
 			// Loop thru the 400x400 grid and adjust the cords with the input variables
 			for (int i = 0; i < 400; i++) {
 				for (int j = 0; j < 400; j++) {
@@ -210,41 +254,52 @@ namespace Mandelbrot_Namespace {
 					Color Color;
 					switch (SelectColorSchemeList.SelectedItem) {
 						case "Black and White":
-							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 2 == 0) ? Color.Black : Color.White;
+							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 2 == 0) ? Color.Black : Color.White;
 							break;
 						case "Red Green Blue":
-							double hue2 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 128) / 128d;
+							double hue2 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 128) / 128d;
 							Windows.UI.Color c2 = ColorHelper.FromHsv(hue2 * 360, 1.0, 1.0, 1.0);
 							Color = Color.FromArgb(c2.A, c2.R, c2.G, c2.B);
 							break;
 						case "Yellow Orange Red":
-							double hue1 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 60) / 256d;
+							double hue1 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 60) / 256d;
 							Windows.UI.Color c1 = ColorHelper.FromHsv(hue1 * 360, 1.0, 1.0, 1.0);
 							Color = Color.FromArgb(c1.A, c1.R, c1.G, c1.B);
 							break;
 						case "Hue Range":
-							double hue = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 256) / 256d; 
-							Windows.UI.Color  c = ColorHelper.FromHsv(hue * 360, 1.0, 1.0, 1.0);
+							double hue = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 256) / 256d;
+							Windows.UI.Color c = ColorHelper.FromHsv(hue * 360, 1.0, 1.0, 1.0);
 							Color = Color.FromArgb(c.A, c.R, c.G, c.B);
 							break;
 						default:
-							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries) % 2 == 0) ? Color.Black : Color.White;
+							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 2 == 0) ? Color.Black : Color.White;
 							break;
 					}
-					
+
 					MandelGrid.SetPixel(i, j, Color);
 				}
 			}
 			MandelDisplay.Invalidate();
 		}
 		// Returns the mandelnumber, don't change 
-		private static int CalcMandelNumber(float x, float y, int MaxTries) {
+		private static int CalcMandelNumber(float x, float y, int MaxTries, float MultiBrot) {
 			int Tries = 0;
-			float a = 0, b = 0;
-			for(; Tries < MaxTries && Math.Sqrt(a * a + b * b) <= 2; ++Tries) {
-				float olda = a;
-				a = a * a - b * b + x;
-				b = 2 * olda * b + y;
+			float a = 0, b = 0; // z = a + ib
+			for (; Tries < MaxTries && Math.Sqrt(a * a + b * b) <= 2; ++Tries) {
+				// Convert (a,b) to polar form
+				double r = Math.Sqrt(a * a + b * b);
+				double theta = Math.Atan2(b, a);
+
+				// Raise to "Power"
+				double rP = Math.Pow(r, MultiBrot);
+				double thetaP = theta * MultiBrot;
+
+				// Back to Cartesian
+				float newA = (float)(rP * Math.Cos(thetaP)) + x;
+				float newB = (float)(rP * Math.Sin(thetaP)) + y;
+
+				a = newA;
+				b = newB;
 			}
 			return Tries;
 		}
@@ -275,6 +330,7 @@ namespace Mandelbrot_Namespace {
 					ScaleInput.Text = "0.01";
 					MaxTriesInput.Text = "100";
 					SelectColorSchemeList.SelectedIndex = 0;
+					MultiBrotCheckBox.Checked = false;
 					break;
 				case "Heat":
 					StartXInput.Text = "-0.014";
@@ -282,6 +338,7 @@ namespace Mandelbrot_Namespace {
 					ScaleInput.Text = "3.1E-5";
 					MaxTriesInput.Text = "400";
 					SelectColorSchemeList.SelectedIndex = 3;
+					MultiBrotCheckBox.Checked = false;
 					break;
 				case "Cyclone":
 					StartXInput.Text = "-0.0127";
@@ -289,6 +346,7 @@ namespace Mandelbrot_Namespace {
 					ScaleInput.Text = "4.5E-5";
 					MaxTriesInput.Text = "100";
 					SelectColorSchemeList.SelectedIndex = 0;
+					MultiBrotCheckBox.Checked = false;
 					break;
 				case "Snowflake":
 					StartXInput.Text = "0.3598";
@@ -296,6 +354,7 @@ namespace Mandelbrot_Namespace {
 					ScaleInput.Text = "5E-6";
 					MaxTriesInput.Text = "100";
 					SelectColorSchemeList.SelectedIndex = 3;
+					MultiBrotCheckBox.Checked = false;
 					break;
 				case "Star":
 					StartXInput.Text = "-0.0419096";
@@ -303,8 +362,56 @@ namespace Mandelbrot_Namespace {
 					ScaleInput.Text = "3.0803384674982227E-07";
 					MaxTriesInput.Text = "600";
 					SelectColorSchemeList.SelectedIndex = 1;
+					MultiBrotCheckBox.Checked = false;
 					break;
-
+				case "Chinese vuur":
+					StartXInput.Text = "-0.0127";
+					StartYInput.Text = "0.737";
+					ScaleInput.Text = "4.5E-5";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 3;
+					MultiBrotCheckBox.Checked = false;
+					break;
+				case "Rode zee":
+					StartXInput.Text = "-0.0127";
+					StartYInput.Text = "0.737";
+					ScaleInput.Text = "4.5E-6";
+					MaxTriesInput.Text = "999";
+					SelectColorSchemeList.SelectedIndex = 2;
+					MultiBrotCheckBox.Checked = false;
+					break;
+				case "Paarse zee":
+					StartXInput.Text = "-0.0127";
+					StartYInput.Text = "0.737";
+					ScaleInput.Text = "4.5E-6";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 1;
+					MultiBrotCheckBox.Checked = false;
+					break;
+				case "Vuur stoot":
+					StartXInput.Text = "-0.0127";
+					StartYInput.Text = "0.737";
+					ScaleInput.Text = "4.5E-5";
+					MaxTriesInput.Text = "250";
+					SelectColorSchemeList.SelectedIndex = 3;
+					MultiBrotCheckBox.Checked = false;
+					break;
+				case "Sikkels":
+					StartXInput.Text = "0.3598";
+					StartYInput.Text = "-0.58693";
+					ScaleInput.Text = "5E-6";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 2;
+					MultiBrotCheckBox.Checked = false;
+					break;
+				case "Donker bos":
+					StartXInput.Text = "-0.0127";
+					StartYInput.Text = "0.737";
+					ScaleInput.Text = "4.5E-6";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 0;
+					MultiBrotCheckBox.Checked = false;
+					break;
 			}
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}

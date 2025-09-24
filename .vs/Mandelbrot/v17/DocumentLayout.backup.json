@@ -18,8 +18,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Mandelbrot.cs",
+              "DocumentMoniker": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Mandelbrot.cs",
+              "RelativeDocumentMoniker": "Mandelbrot.cs",
+              "ToolTip": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Mandelbrot.cs",
+              "RelativeToolTip": "Mandelbrot.cs",
+              "ViewState": "AgIAAAgBAAAAAAAAAAAAwBsBAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-18T10:03:24.965Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
@@ -31,19 +44,6 @@
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-23T08:05:59.93Z",
               "EditorCaption": " [Design]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Mandelbrot.cs",
-              "DocumentMoniker": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Mandelbrot.cs",
-              "RelativeDocumentMoniker": "Mandelbrot.cs",
-              "ToolTip": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Mandelbrot.cs",
-              "RelativeToolTip": "Mandelbrot.cs",
-              "ViewState": "AgIAACEBAAAAAAAAAAAQwCwBAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-18T10:03:24.965Z",
-              "EditorCaption": ""
             }
           ]
         }
