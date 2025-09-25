@@ -11,38 +11,66 @@ using System.Threading;
 namespace Mandelbrot_Namespace {
 
 	class Mandebrot_class : Form {
+		// All the screen components
 		private readonly Bitmap MandelGrid = new(400, 400);
 		private TextBox StartXInput;
 		private TextBox StartYInput;
 		private TextBox MaxTriesInput;
 		private TextBox ScaleInput;
+		private TextBox MultiBrotInput;
 		private Label MandelDisplay;
 		private Label StartXLabel;
 		private Label StartYLabel;
 		private Label ScaleLabel;
 		private Label MaxTriesLabel;
-		private CheckBox AutoUpdateCheckBox;
-		private ComboBox SelectExampleList;
-		private ComboBox SelectColorSchemeList;
 		private Label MultiBrotlabel;
-		private TextBox MultiBrotInput;
-		private CheckBox MultiBrotCheckBox;
 		private Label XCordLabel;
 		private Label YCordLabel;
+		private CheckBox AutoUpdateCheckBox;
+		private CheckBox MultiBrotCheckBox;
+		private ComboBox SelectExampleList;
+		private ComboBox SelectColorSchemeList;
 		private Button RecalculateButton;
+		// For the distinction between a mouse click and drag
 		private bool MouseIsDown;
 		private Point LastMousePoint;
 		private Point MouseDownPoint;
 		private DateTime MouseDownTime;
 		private bool MouseDragged;
-
+		// Lock object to prevent multithreading issue's 
 		private readonly object BitmapLock = new();
 
 		public Mandebrot_class() {
 			Text = "Mandelbrot";
 			InitializeComponent();
-			// Leave here, otherwise the Visual Studio Designer interferes with it and removes it
+			Init();
+		}
+		// The VS designer can't handle lambda function so need to be defined elsewhere 
+		private void Init() {
 			MandelDisplay.Image = MandelGrid;
+			MandelDisplay.MouseWheel += (object sender, MouseEventArgs e) => {
+				double ZoomFactor = (e.Delta > 0) ? 0.66 : 1.5;
+				if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
+				if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
+				if (!(double.TryParse(ScaleInput.Text.Replace('.', ','), out double Scale))) return;
+				StartXInput.Text = ((e.X - 200) * Scale + StartX).ToString();
+				StartYInput.Text = ((e.Y - 200) * Scale + StartY).ToString();
+				ScaleInput.Text = (Scale * ZoomFactor).ToString();
+			};
+			MandelDisplay.MouseMove += MandelDisplayMouseMove;
+			MandelDisplay.MouseDown += (object sender, MouseEventArgs e) => {
+				MouseIsDown = true;
+				LastMousePoint = e.Location;
+				MouseDownPoint = e.Location;
+				MouseDownTime = DateTime.Now;
+				MouseDragged = false;
+
+			};
+			MandelDisplay.MouseUp += (object sender, MouseEventArgs e) => {
+				MouseIsDown = false;
+				if (!MouseDragged && (DateTime.Now - MouseDownTime).TotalMilliseconds < 250) MandelZoom(sender, e);
+
+			};
 			// Show the mandelbrot image when program opens
 			RenderMandelImage();
 		}
@@ -111,20 +139,6 @@ namespace Mandelbrot_Namespace {
 			MandelDisplay.Name = "MandelDisplay";
 			MandelDisplay.Size = new Size(400, 400);
 			MandelDisplay.TabIndex = 6;
-			MandelDisplay.MouseMove += MandelDisplayMouseMove;
-			MandelDisplay.MouseDown += (object sender, MouseEventArgs e) => {
-				MouseIsDown = true;
-				LastMousePoint = e.Location;
-				MouseDownPoint = e.Location;
-				MouseDownTime = DateTime.Now;
-				MouseDragged = false;
-
-			};
-			MandelDisplay.MouseUp += (object sender, MouseEventArgs e) => {
-				MouseIsDown = false;
-				if(!MouseDragged && (DateTime.Now - MouseDownTime).TotalMilliseconds < 250) MandelZoom(sender, e);
-
-			};
 			// 
 			// StartXLabel
 			// 
@@ -286,7 +300,7 @@ namespace Mandelbrot_Namespace {
 					MandelGrid.SetPixel(i, j, Color.White);
 				}
 			}
-			double MultiBrot = 2;
+			double MultiBrot = 2; // Value for normal mandelbrot
 			// Get the other input variables
 			if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
 			if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
@@ -297,6 +311,7 @@ namespace Mandelbrot_Namespace {
 
 			// Loop thru the 400x400 grid and adjust the cords with the input variables
 			string ColorSchemeList = (SelectColorSchemeList.SelectedItem == null) ? "" : SelectColorSchemeList.SelectedItem.ToString();
+			// Buffer to write to, each iteration writes to an predetermined offset
 			byte[] buffer = new byte[1600 * 400];
 			ParallelLoopResult res = Parallel.For(0, 400, i => {
 				for (int j = 0; j < 400; j++) {
@@ -327,9 +342,10 @@ namespace Mandelbrot_Namespace {
 							break;
 					}
 					Buffer.BlockCopy(BitConverter.GetBytes(color.ToArgb()), 0, buffer, 1600 * j + i * 4, 4);
-					//MandelGrid.SetPixel(i, j, color);
 				}
 			});
+			// When calling the renderfunction to fast after each other, multiple threads can happen
+			// So a lock is necessary for the write action
 			lock (BitmapLock) {
 				BitmapData data = MandelGrid.LockBits(new Rectangle(0, 0, 400, 400), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 				Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
@@ -340,6 +356,13 @@ namespace Mandelbrot_Namespace {
 
 		// Returns the mandelnumber, don't change 
 		private static int CalcMandelNumber(double x, double y, int MaxTries, double MultiBrot) {
+			// Cardioid detection 
+			double q = (x - 0.25) * (x - 0.25) + y * y;
+			if (q * (q + (x - 0.25)) < 0.25 * y * y) return MaxTries;
+
+			// Period 2 buldb detection
+			if ((x + 1) * (x + 1) + y * y < 0.0625) return MaxTries;
+
 			int Tries = 0; double a = 0, b = 0;
 			for (; Tries < MaxTries && (a * a + b * b) <= 4; ++Tries) {
 				double ca = a, cb = b;
@@ -376,7 +399,7 @@ namespace Mandelbrot_Namespace {
 			ScaleInput.Text = (Scale * ZoomFactor).ToString();
 		}
 		// Mouse move, show coords
-
+		// And mouse drag when the mouse is down
 		private void MandelDisplayMouseMove(object sender, MouseEventArgs e) {
 			if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
 			if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
@@ -404,7 +427,7 @@ namespace Mandelbrot_Namespace {
 
 			LastMousePoint = e.Location;
 		}
-
+		// List of hardcoded examples with their values
 		private void SelectExampleListChanged(object sender, EventArgs e) {
 			switch (SelectExampleList.SelectedItem) {
 				case "Default":
@@ -496,7 +519,7 @@ namespace Mandelbrot_Namespace {
 					MultiBrotCheckBox.Checked = false;
 					break;
 			}
-			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
+			RenderMandelImage();
 		}
 		private void SelectColorSchemeListChanged(object sender, EventArgs e) {
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
