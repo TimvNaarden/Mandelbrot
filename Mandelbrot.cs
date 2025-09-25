@@ -5,10 +5,11 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Threading;
 
 
 namespace Mandelbrot_Namespace {
-	
+
 	class Mandebrot_class : Form {
 		private readonly Bitmap MandelGrid = new(400, 400);
 		private TextBox StartXInput;
@@ -29,6 +30,14 @@ namespace Mandelbrot_Namespace {
 		private Label XCordLabel;
 		private Label YCordLabel;
 		private Button RecalculateButton;
+		private bool MouseIsDown;
+		private Point LastMousePoint;
+		private Point MouseDownPoint;
+		private DateTime MouseDownTime;
+		private bool MouseDragged;
+
+		private readonly object BitmapLock = new();
+
 		public Mandebrot_class() {
 			Text = "Mandelbrot";
 			InitializeComponent();
@@ -102,8 +111,20 @@ namespace Mandelbrot_Namespace {
 			MandelDisplay.Name = "MandelDisplay";
 			MandelDisplay.Size = new Size(400, 400);
 			MandelDisplay.TabIndex = 6;
-			MandelDisplay.MouseClick += MandelDisplayMouseClick;
 			MandelDisplay.MouseMove += MandelDisplayMouseMove;
+			MandelDisplay.MouseDown += (object sender, MouseEventArgs e) => {
+				MouseIsDown = true;
+				LastMousePoint = e.Location;
+				MouseDownPoint = e.Location;
+				MouseDownTime = DateTime.Now;
+				MouseDragged = false;
+
+			};
+			MandelDisplay.MouseUp += (object sender, MouseEventArgs e) => {
+				MouseIsDown = false;
+				if(!MouseDragged && (DateTime.Now - MouseDownTime).TotalMilliseconds < 250) MandelZoom(sender, e);
+
+			};
 			// 
 			// StartXLabel
 			// 
@@ -273,10 +294,10 @@ namespace Mandelbrot_Namespace {
 			if (MultiBrotCheckBox.Checked) {
 				if (!(double.TryParse(MultiBrotInput.Text.Replace('.', ','), out MultiBrot))) MultiBrot = 3;
 			}
+
 			// Loop thru the 400x400 grid and adjust the cords with the input variables
 			string ColorSchemeList = (SelectColorSchemeList.SelectedItem == null) ? "" : SelectColorSchemeList.SelectedItem.ToString();
-			BitmapData data = MandelGrid.LockBits(new Rectangle(0, 0, 400, 400), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-			byte[] buffer = new byte[data.Stride * 400];
+			byte[] buffer = new byte[1600 * 400];
 			ParallelLoopResult res = Parallel.For(0, 400, i => {
 				for (int j = 0; j < 400; j++) {
 					double MandelNumberX = (i - 200) * Scale + StartX;
@@ -305,18 +326,21 @@ namespace Mandelbrot_Namespace {
 							color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 2 == 0) ? Color.Black : Color.White;
 							break;
 					}
-					Buffer.BlockCopy(BitConverter.GetBytes(color.ToArgb()), 0, buffer, data.Stride * j + i * 4, 4);
+					Buffer.BlockCopy(BitConverter.GetBytes(color.ToArgb()), 0, buffer, 1600 * j + i * 4, 4);
 					//MandelGrid.SetPixel(i, j, color);
 				}
 			});
-			MandelGrid.UnlockBits(data);
-			Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
-			MandelDisplay.Invalidate();
+			lock (BitmapLock) {
+				BitmapData data = MandelGrid.LockBits(new Rectangle(0, 0, 400, 400), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+				Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
+				MandelDisplay.Invalidate();
+				MandelGrid.UnlockBits(data);
+			}
 		}
-			
+
 		// Returns the mandelnumber, don't change 
 		private static int CalcMandelNumber(double x, double y, int MaxTries, double MultiBrot) {
-			int Tries = 0; double a = 0, b = 0; 
+			int Tries = 0; double a = 0, b = 0;
 			for (; Tries < MaxTries && (a * a + b * b) <= 4; ++Tries) {
 				double ca = a, cb = b;
 				for (int i = 1; i < MultiBrot; i++) {
@@ -342,7 +366,7 @@ namespace Mandelbrot_Namespace {
 		}
 
 		// Mouseclicks, so zoom in and zoom out
-		private void MandelDisplayMouseClick(object sender, MouseEventArgs e) {
+		private void MandelZoom(object sender, MouseEventArgs e) {
 			double ZoomFactor = (e.Button == MouseButtons.Left) ? 0.66 : 1.5;
 			if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
 			if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
@@ -352,6 +376,7 @@ namespace Mandelbrot_Namespace {
 			ScaleInput.Text = (Scale * ZoomFactor).ToString();
 		}
 		// Mouse move, show coords
+
 		private void MandelDisplayMouseMove(object sender, MouseEventArgs e) {
 			if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
 			if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
@@ -360,6 +385,24 @@ namespace Mandelbrot_Namespace {
 			double Y = (e.Y - 200) * Scale + StartY;
 			XCordLabel.Text = $"X: {X}";
 			YCordLabel.Text = $"Y: {Y}";
+			if (MouseIsDown) {
+				// See minimal movement so it is a drag
+				if (Math.Abs(e.X - MouseDownPoint.X) > 3 || Math.Abs(e.Y - MouseDownPoint.Y) > 3) {
+					int dx = e.X - LastMousePoint.X;
+					int dy = e.Y - LastMousePoint.Y;
+
+					StartX -= dx * Scale;
+					StartY -= dy * Scale;
+
+					StartXInput.Text = StartX.ToString();
+					StartYInput.Text = StartY.ToString();
+
+					RenderMandelImage();
+					Thread.Sleep(50);
+				}
+			}
+
+			LastMousePoint = e.Location;
 		}
 
 		private void SelectExampleListChanged(object sender, EventArgs e) {
