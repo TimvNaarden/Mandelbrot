@@ -1,11 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Toolkit.Uwp.Helpers;
+using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Toolkit.Uwp.Helpers;
+
 
 namespace Mandelbrot_Namespace {
+	
 	class Mandebrot_class : Form {
 		private readonly Bitmap MandelGrid = new(400, 400);
 		private TextBox StartXInput;
@@ -190,7 +193,7 @@ namespace Mandelbrot_Namespace {
 			MultiBrotInput.Size = new Size(100, 27);
 			MultiBrotInput.TabIndex = 14;
 			MultiBrotInput.Text = "3";
-			MultiBrotInput.TextChanged += InputChanged;
+			MultiBrotInput.TextChanged += InputChangedMulti;
 			// 
 			// MultiBrotCheckBox
 			// 
@@ -230,76 +233,74 @@ namespace Mandelbrot_Namespace {
 		// The mandel image is being rendered here 
 		private void RenderMandelImage() {
 			// Get the scale input, otherwise return 
-			if (!(float.TryParse(ScaleInput.Text.Replace('.', ','), out float Scale))) return;
+			if (!(double.TryParse(ScaleInput.Text.Replace('.', ','), out double Scale))) return;
 			// Clear the image
 			for (int i = 0; i < 400; i++) {
 				for (int j = 0; j < 400; j++) {
 					MandelGrid.SetPixel(i, j, Color.White);
 				}
 			}
-			float MultiBrot = 2;
+			double MultiBrot = 2;
 			// Get the other input variables
-			if (!(float.TryParse(StartXInput.Text.Replace('.', ','), out float StartX))) StartX = 0;
-			if (!(float.TryParse(StartYInput.Text.Replace('.', ','), out float StartY))) StartY = 0;
+			if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
+			if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
 			if (!(int.TryParse(MaxTriesInput.Text.Replace('.', ','), out int MaxTries))) MaxTries = 100;
 			if (MultiBrotCheckBox.Checked) {
-				if (!(float.TryParse(MultiBrotInput.Text.Replace('.', ','), out MultiBrot))) MultiBrot = 3;
+				if (!(double.TryParse(MultiBrotInput.Text.Replace('.', ','), out MultiBrot))) MultiBrot = 3;
 			}
-			
 			// Loop thru the 400x400 grid and adjust the cords with the input variables
-			for (int i = 0; i < 400; i++) {
+			string ColorSchemeList = (SelectColorSchemeList.SelectedItem == null) ? "" : SelectColorSchemeList.SelectedItem.ToString();
+			BitmapData data = MandelGrid.LockBits(new Rectangle(0, 0, 400, 400), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+			byte[] buffer = new byte[data.Stride * 400];
+			ParallelLoopResult res = Parallel.For(0, 400, i => {
 				for (int j = 0; j < 400; j++) {
-					float MandelNumberX = (i - 200) * Scale + StartX;
-					float MandelNumberY = (j - 200) * Scale + StartY;
-					Color Color;
-					switch (SelectColorSchemeList.SelectedItem) {
+					double MandelNumberX = (i - 200) * Scale + StartX;
+					double MandelNumberY = (j - 200) * Scale + StartY;
+					Color color;
+					switch (ColorSchemeList) {
 						case "Black and White":
-							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 2 == 0) ? Color.Black : Color.White;
+							color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 2 == 0) ? Color.Black : Color.White;
 							break;
 						case "Red Green Blue":
 							double hue2 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 128) / 128d;
 							Windows.UI.Color c2 = ColorHelper.FromHsv(hue2 * 360, 1.0, 1.0, 1.0);
-							Color = Color.FromArgb(c2.A, c2.R, c2.G, c2.B);
+							color = Color.FromArgb(c2.A, c2.R, c2.G, c2.B);
 							break;
 						case "Yellow Orange Red":
 							double hue1 = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 60) / 256d;
 							Windows.UI.Color c1 = ColorHelper.FromHsv(hue1 * 360, 1.0, 1.0, 1.0);
-							Color = Color.FromArgb(c1.A, c1.R, c1.G, c1.B);
+							color = Color.FromArgb(c1.A, c1.R, c1.G, c1.B);
 							break;
 						case "Hue Range":
 							double hue = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 256) / 256d;
 							Windows.UI.Color c = ColorHelper.FromHsv(hue * 360, 1.0, 1.0, 1.0);
-							Color = Color.FromArgb(c.A, c.R, c.G, c.B);
+							color = Color.FromArgb(c.A, c.R, c.G, c.B);
 							break;
 						default:
-							Color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 2 == 0) ? Color.Black : Color.White;
+							color = (CalcMandelNumber(MandelNumberX, MandelNumberY, MaxTries, MultiBrot) % 2 == 0) ? Color.Black : Color.White;
 							break;
 					}
-
-					MandelGrid.SetPixel(i, j, Color);
+					Buffer.BlockCopy(BitConverter.GetBytes(color.ToArgb()), 0, buffer, data.Stride * j + i * 4, 4);
+					//MandelGrid.SetPixel(i, j, color);
 				}
-			}
+			});
+			MandelGrid.UnlockBits(data);
+			Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
 			MandelDisplay.Invalidate();
 		}
+			
 		// Returns the mandelnumber, don't change 
-		private static int CalcMandelNumber(float x, float y, int MaxTries, float MultiBrot) {
-			int Tries = 0;
-			float a = 0, b = 0; // z = a + ib
-			for (; Tries < MaxTries && Math.Sqrt(a * a + b * b) <= 2; ++Tries) {
-				// Convert (a,b) to polar form
-				double r = Math.Sqrt(a * a + b * b);
-				double theta = Math.Atan2(b, a);
-
-				// Raise to "Power"
-				double rP = Math.Pow(r, MultiBrot);
-				double thetaP = theta * MultiBrot;
-
-				// Back to Cartesian
-				float newA = (float)(rP * Math.Cos(thetaP)) + x;
-				float newB = (float)(rP * Math.Sin(thetaP)) + y;
-
-				a = newA;
-				b = newB;
+		private static int CalcMandelNumber(double x, double y, int MaxTries, double MultiBrot) {
+			int Tries = 0; double a = 0, b = 0; 
+			for (; Tries < MaxTries && (a * a + b * b) <= 4; ++Tries) {
+				double ca = a, cb = b;
+				for (int i = 1; i < MultiBrot; i++) {
+					double temp = a * ca - b * cb;
+					b = a * cb + b * ca;
+					a = temp;
+				}
+				a += x;
+				b += y;
 			}
 			return Tries;
 		}
@@ -311,12 +312,16 @@ namespace Mandelbrot_Namespace {
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}
 
+		private void InputChangedMulti(object sender, EventArgs e) {
+			if (AutoUpdateCheckBox.Checked && MultiBrotCheckBox.Checked) RenderMandelImage();
+		}
+
 		// Mouseclicks, so zoom in and zoom out
 		private void MandelDisplayMouseClick(object sender, MouseEventArgs e) {
 			double ZoomFactor = (e.Button == MouseButtons.Left) ? 0.66 : 1.5;
-			if (!(float.TryParse(StartXInput.Text.Replace('.', ','), out float StartX))) StartX = 0;
-			if (!(float.TryParse(StartYInput.Text.Replace('.', ','), out float StartY))) StartY = 0;
-			if (!(float.TryParse(ScaleInput.Text.Replace('.', ','), out float Scale))) return;
+			if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
+			if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
+			if (!(double.TryParse(ScaleInput.Text.Replace('.', ','), out double Scale))) return;
 			StartXInput.Text = ((e.X - 200) * Scale + StartX).ToString();
 			StartYInput.Text = ((e.Y - 200) * Scale + StartY).ToString();
 			ScaleInput.Text = (Scale * ZoomFactor).ToString();
@@ -415,7 +420,6 @@ namespace Mandelbrot_Namespace {
 			}
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}
-
 		private void SelectColorSchemeListChanged(object sender, EventArgs e) {
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}
