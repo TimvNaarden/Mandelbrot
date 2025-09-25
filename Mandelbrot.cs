@@ -26,6 +26,8 @@ namespace Mandelbrot_Namespace {
 		private Label MultiBrotlabel;
 		private TextBox MultiBrotInput;
 		private CheckBox MultiBrotCheckBox;
+		private Label XCordLabel;
+		private Label YCordLabel;
 		private Button RecalculateButton;
 		public Mandebrot_class() {
 			Text = "Mandelbrot";
@@ -54,6 +56,8 @@ namespace Mandelbrot_Namespace {
 			MultiBrotlabel = new Label();
 			MultiBrotInput = new TextBox();
 			MultiBrotCheckBox = new CheckBox();
+			XCordLabel = new Label();
+			YCordLabel = new Label();
 			SuspendLayout();
 			// 
 			// StartXInput
@@ -99,6 +103,7 @@ namespace Mandelbrot_Namespace {
 			MandelDisplay.Size = new Size(400, 400);
 			MandelDisplay.TabIndex = 6;
 			MandelDisplay.MouseClick += MandelDisplayMouseClick;
+			MandelDisplay.MouseMove += MandelDisplayMouseMove;
 			// 
 			// StartXLabel
 			// 
@@ -206,9 +211,29 @@ namespace Mandelbrot_Namespace {
 			MultiBrotCheckBox.UseVisualStyleBackColor = true;
 			MultiBrotCheckBox.CheckedChanged += InputChanged;
 			// 
+			// XCordLabel
+			// 
+			XCordLabel.AutoSize = true;
+			XCordLabel.Location = new Point(17, 600);
+			XCordLabel.Name = "XCordLabel";
+			XCordLabel.Size = new Size(33, 20);
+			XCordLabel.TabIndex = 16;
+			XCordLabel.Text = "X: 0";
+			// 
+			// YCordLabel
+			// 
+			YCordLabel.AutoSize = true;
+			YCordLabel.Location = new Point(265, 601);
+			YCordLabel.Name = "YCordLabel";
+			YCordLabel.Size = new Size(32, 20);
+			YCordLabel.TabIndex = 17;
+			YCordLabel.Text = "Y: 0";
+			// 
 			// Mandebrot_class
 			// 
-			ClientSize = new Size(420, 604);
+			ClientSize = new Size(420, 630);
+			Controls.Add(YCordLabel);
+			Controls.Add(XCordLabel);
 			Controls.Add(MultiBrotCheckBox);
 			Controls.Add(MultiBrotInput);
 			Controls.Add(MultiBrotlabel);
@@ -325,6 +350,16 @@ namespace Mandelbrot_Namespace {
 			StartXInput.Text = ((e.X - 200) * Scale + StartX).ToString();
 			StartYInput.Text = ((e.Y - 200) * Scale + StartY).ToString();
 			ScaleInput.Text = (Scale * ZoomFactor).ToString();
+		}
+		// Mouse move, show coords
+		private void MandelDisplayMouseMove(object sender, MouseEventArgs e) {
+			if (!(double.TryParse(StartXInput.Text.Replace('.', ','), out double StartX))) StartX = 0;
+			if (!(double.TryParse(StartYInput.Text.Replace('.', ','), out double StartY))) StartY = 0;
+			if (!(double.TryParse(ScaleInput.Text.Replace('.', ','), out double Scale))) return;
+			double X = (e.X - 200) * Scale + StartX;
+			double Y = (e.Y - 200) * Scale + StartY;
+			XCordLabel.Text = $"X: {X}";
+			YCordLabel.Text = $"Y: {Y}";
 		}
 
 		private void SelectExampleListChanged(object sender, EventArgs e) {
