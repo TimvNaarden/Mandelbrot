@@ -421,7 +421,7 @@ namespace Mandelbrot_Namespace {
 
 					StartXInput.Text = StartX.ToString();
 					StartYInput.Text = StartY.ToString();
-					if (!AutoUpdateCheckBox.Checked) RenderMandelImage();
+					RenderMandelImage();
 				}
 			}
 
@@ -526,3 +526,15 @@ namespace Mandelbrot_Namespace {
 		}
 	}
 }
+
+/* 
+In addition to the requirements specified in Appendix A, we have also added the following:
+	- Zoom in/out with the mouse wheel. 
+	- Displaying the coördinates of the mouse pointer at the bottem of the window
+	- Added a multibrot option with on/off switch. This is only interesting when seeing the full image,
+		due to the fact that the multibrot adds sort of a symmetry ass. 
+	- The ability to drag your mose to move the image. Please note that when doing this the render mechanism isn't as fast,
+		due to the needed calculation so holding the mouse still or releasing it, will display the new image. 
+	- Lots of example's and options to change colorscheme 
+	- A auto refresh option when changing input fields, with on/off toggle
+*/
