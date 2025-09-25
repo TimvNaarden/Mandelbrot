@@ -56,6 +56,7 @@ namespace Mandelbrot_Namespace {
 				StartXInput.Text = ((e.X - 200) * Scale + StartX).ToString();
 				StartYInput.Text = ((e.Y - 200) * Scale + StartY).ToString();
 				ScaleInput.Text = (Scale * ZoomFactor).ToString();
+				if(!AutoUpdateCheckBox.Checked) RenderMandelImage();
 			};
 			MandelDisplay.MouseMove += MandelDisplayMouseMove;
 			MandelDisplay.MouseDown += (object sender, MouseEventArgs e) => {
@@ -397,6 +398,7 @@ namespace Mandelbrot_Namespace {
 			StartXInput.Text = ((e.X - 200) * Scale + StartX).ToString();
 			StartYInput.Text = ((e.Y - 200) * Scale + StartY).ToString();
 			ScaleInput.Text = (Scale * ZoomFactor).ToString();
+			if (!AutoUpdateCheckBox.Checked) RenderMandelImage();
 		}
 		// Mouse move, show coords
 		// And mouse drag when the mouse is down
@@ -419,9 +421,7 @@ namespace Mandelbrot_Namespace {
 
 					StartXInput.Text = StartX.ToString();
 					StartYInput.Text = StartY.ToString();
-
-					RenderMandelImage();
-					Thread.Sleep(50);
+					if (!AutoUpdateCheckBox.Checked) RenderMandelImage();
 				}
 			}
 
