@@ -9,6 +9,14 @@
     {
       "AbsoluteMoniker": "D:0:0:{E922715B-DC5C-D661-B486-CDB673C9E6B9}|Mandelbrot.csproj|D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\mandelbrot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{E922715B-DC5C-D661-B486-CDB673C9E6B9}|Mandelbrot.csproj|solutionrelative:mandelbrot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E922715B-DC5C-D661-B486-CDB673C9E6B9}|Mandelbrot.csproj|d:\\onedrive\\school\\universiteit\\imp\\mandelbrot\\json\\jsonwriter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E922715B-DC5C-D661-B486-CDB673C9E6B9}|Mandelbrot.csproj|solutionrelative:json\\jsonwriter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E922715B-DC5C-D661-B486-CDB673C9E6B9}|Mandelbrot.csproj|d:\\onedrive\\school\\universiteit\\imp\\mandelbrot\\json\\jsonparser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E922715B-DC5C-D661-B486-CDB673C9E6B9}|Mandelbrot.csproj|solutionrelative:json\\jsonparser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,8 +26,34 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 2,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "JsonWriter.cs",
+              "DocumentMoniker": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Json\\JsonWriter.cs",
+              "RelativeDocumentMoniker": "Json\\JsonWriter.cs",
+              "ToolTip": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Json\\JsonWriter.cs",
+              "RelativeToolTip": "Json\\JsonWriter.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADAAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-26T14:22:01.869Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "JsonParser.cs",
+              "DocumentMoniker": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Json\\JsonParser.cs",
+              "RelativeDocumentMoniker": "Json\\JsonParser.cs",
+              "ToolTip": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Json\\JsonParser.cs",
+              "RelativeToolTip": "Json\\JsonParser.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-26T13:56:03.222Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -28,7 +62,7 @@
               "RelativeDocumentMoniker": "Mandelbrot.cs",
               "ToolTip": "D:\\OneDrive\\School\\Universiteit\\IMP\\Mandelbrot\\Mandelbrot.cs",
               "RelativeToolTip": "Mandelbrot.cs",
-              "ViewState": "AgIAAHECAAAAAAAAAAAAwHwCAAA1AAAAAAAAAA==",
+              "ViewState": "AgIAAOsBAAAAAAAAAAAgwPoBAAAdAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-25T10:28:50.179Z",
               "EditorCaption": ""

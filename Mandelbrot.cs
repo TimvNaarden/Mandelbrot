@@ -1,28 +1,27 @@
-﻿using Microsoft.Toolkit.Uwp.Helpers;
+﻿using Mandelbrot_Namespace.Json;
+using Microsoft.Toolkit.Uwp.Helpers;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Threading;
-using System.Collections.Generic;
-using Windows.UI.Xaml;
-using System.IO;
-
 
 namespace Mandelbrot_Namespace {
 
-	struct Save {
-		public string Name;
-		public string XStart;
-		public string YStart;
-		public string Scale;
-		public string MaxTries;
-		public string MultiBrot;
-		public bool MultiBrotEnable;
-		public int ColorIndex;
-	};
+	// Getters and Setters required, otherwise the jsonwriter doesn't see it as properties 
+	public struct Save {
+		public string Name { get; set; }
+		public string XStart { get; set; }
+		public string YStart { get; set; }
+		public string Scale { get; set; }
+		public string MaxTries { get; set; }
+		public string MultiBrot { get; set; }
+		public bool MultiBrotEnable { get; set; }
+		public int ColorIndex { get; set; }
+	}
 
 	class Mandebrot_class : Form {
 		// All the screen components
@@ -32,6 +31,7 @@ namespace Mandelbrot_Namespace {
 		private TextBox MaxTriesInput;
 		private TextBox ScaleInput;
 		private TextBox MultiBrotInput;
+		private TextBox SaveNameInput;
 		private Label MandelDisplay;
 		private Label StartXLabel;
 		private Label StartYLabel;
@@ -45,6 +45,8 @@ namespace Mandelbrot_Namespace {
 		private ComboBox SelectExampleList;
 		private ComboBox SelectColorSchemeList;
 		private Button RecalculateButton;
+		private Button SaveButton;
+		private Button IMGExport;
 		// For the distinction between a mouse click and drag
 		private bool MouseIsDown;
 		private Point LastMousePoint;
@@ -53,20 +55,28 @@ namespace Mandelbrot_Namespace {
 		private bool MouseDragged;
 		// Lock object to prevent multithreading issue's 
 		private readonly object BitmapLock = new();
-		private TextBox SaveNameInput;
-		private Button SaveButton;
-		private Button IMGExport;
-
 		// Saves made by the user 
-		private List<Save> Saves = [];
+		private readonly List<Save> Saves = [];
+
+		// Load the saved from the disk
+		private void LoadSaves() {
+			if (File.Exists("./saves.json")) {
+				foreach(string line in File.ReadLines("./saves.json")) {
+					Save s = JsonParser.FromJson<Save>(line);
+					Saves.Add(s);
+					SelectExampleList.Items.Add(s.Name);
+				}
+			}
+		}
 
 		public Mandebrot_class() {
 			Text = "Mandelbrot";
 			InitializeComponent();
-			Init();
+			LoadSaves();
+			MandelDisplayEvents();
 		}
 		// The VS designer can't handle lambda function so need to be defined elsewhere 
-		private void Init() {
+		private void MandelDisplayEvents() {
 			MandelDisplay.Image = MandelGrid;
 			MandelDisplay.MouseWheel += (object sender, MouseEventArgs e) => {
 				double ZoomFactor = (e.Delta > 0) ? 0.66 : 1.5;
@@ -222,7 +232,7 @@ namespace Mandelbrot_Namespace {
 			// SelectExampleList
 			// 
 			SelectExampleList.FormattingEnabled = true;
-			SelectExampleList.Items.AddRange(new object[] { "Default", "Heat", "Cyclone", "Snowflake", "Star", "Chinese vuur", "Rode zee", "Paarse zee", "Vuur stoot", "Sikkels", "Donker bos" });
+			SelectExampleList.Items.AddRange(new object[] { "Default", "Target", "Heat", "Cyclone", "Snowflake", "Star", "Chinese vuur", "Rode zee", "Paarse zee", "Vuur stoot", "Sikkels", "Donker bos" });
 			SelectExampleList.Location = new Point(12, 141);
 			SelectExampleList.Name = "SelectExampleList";
 			SelectExampleList.Size = new Size(145, 28);
@@ -412,11 +422,14 @@ namespace Mandelbrot_Namespace {
 		// Returns the mandelnumber, don't change 
 		private static int CalcMandelNumber(double x, double y, int MaxTries, double MultiBrot) {
 			// Cardioid detection 
-			double q = (x - 0.25) * (x - 0.25) + y * y;
-			if (q * (q + (x - 0.25)) < 0.25 * y * y) return MaxTries;
+			if (MultiBrot == 2) {
+				double q = (x - 0.25) * (x - 0.25) + y * y;
+				if (q * (q + (x - 0.25)) < 0.25 * y * y) return MaxTries;
+			}
 
 			// Period 2 buldb detection
-			if ((x + 1) * (x + 1) + y * y < 0.0625) return MaxTries;
+			if(MultiBrot == 2)
+				if ((x + 1) * (x + 1) + y * y < 0.0625) return MaxTries;
 
 			int Tries = 0; double a = 0, b = 0;
 			for (; Tries < MaxTries && (a * a + b * b) <= 4; ++Tries) {
@@ -484,6 +497,15 @@ namespace Mandelbrot_Namespace {
 		// List of hardcoded examples with their values
 		private void SelectExampleListChanged(object sender, EventArgs e) {
 			switch (SelectExampleList.SelectedItem) {
+				case "Target":
+					StartXInput.Text = "0";
+					StartYInput.Text = "0";
+					ScaleInput.Text = "0.01";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 0;
+					MultiBrotCheckBox.Checked = true;
+					MultiBrotInput.Text = "1";
+					break;
 				case "Heat":
 					StartXInput.Text = "-0.014";
 					StartYInput.Text = "0.74";
@@ -573,6 +595,7 @@ namespace Mandelbrot_Namespace {
 					MultiBrotCheckBox.Checked = false;
 					break;
 				default:
+					// Check if one of the user's saves is selected
 					foreach(Save s in Saves) {
 						if(s.Name == SelectExampleList.SelectedItem.ToString()) {
 							StartXInput.Text = s.XStart;
@@ -594,7 +617,13 @@ namespace Mandelbrot_Namespace {
 		}
 
 		private void SaveClicked(object sender, EventArgs e) {
-			Saves.Add(new Save {
+			foreach(Save save in Saves) {
+				if (save.Name == SaveNameInput.Text) {
+					MessageBox.Show("Save name already used", "Save Configuration");
+					return;
+				}
+			}
+			Save s = new() {
 				Name = SaveNameInput.Text,
 				XStart = StartXInput.Text,
 				YStart = StartYInput.Text,
@@ -603,8 +632,15 @@ namespace Mandelbrot_Namespace {
 				MultiBrot = MultiBrotInput.Text,
 				MultiBrotEnable = MultiBrotCheckBox.Checked,
 				ColorIndex = SelectColorSchemeList.SelectedIndex
-			});
+			};
+			Saves.Add(s);
 			SelectExampleList.Items.Add(SaveNameInput.Text);
+			// Save to disk
+			if(!File.Exists("./saves.josn")) {
+				FileStream f = File.Open("./saves.json", FileMode.Create);
+				f.Close();
+			}
+			File.AppendAllText("./saves.json", JsonWriter.ToJson(s));
 		}
 
 		private void IMGExportClicked(object sender, EventArgs e) {
@@ -633,6 +669,9 @@ In addition to the requirements specified in Appendix A, we have also added the 
 		due to the needed calculation so holding the mouse still or releasing it, will display the new image. 
 	- Lots of example's and options to change colorscheme 
 	- Am auto refresh option when changing input fields, with on/off toggle
-	- An option to save your found configurations 
+	- An option to save your found configurations, is also saved to a file, so it works across restarts
+		Also checks if the name is already used or not.
 	- An option to export your current picture to a file
+
+The json writer and parser that is being used is recycled from another project(https://github.com/TimvNaarden/Hardware_specs_client/tree/1.0.1)
 */
