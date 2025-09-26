@@ -6,9 +6,23 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Threading;
+using System.Collections.Generic;
+using Windows.UI.Xaml;
+using System.IO;
 
 
 namespace Mandelbrot_Namespace {
+
+	struct Save {
+		public string Name;
+		public string XStart;
+		public string YStart;
+		public string Scale;
+		public string MaxTries;
+		public string MultiBrot;
+		public bool MultiBrotEnable;
+		public int ColorIndex;
+	};
 
 	class Mandebrot_class : Form {
 		// All the screen components
@@ -39,6 +53,12 @@ namespace Mandelbrot_Namespace {
 		private bool MouseDragged;
 		// Lock object to prevent multithreading issue's 
 		private readonly object BitmapLock = new();
+		private TextBox SaveNameInput;
+		private Button SaveButton;
+		private Button IMGExport;
+
+		// Saves made by the user 
+		private List<Save> Saves = [];
 
 		public Mandebrot_class() {
 			Text = "Mandelbrot";
@@ -96,6 +116,9 @@ namespace Mandelbrot_Namespace {
 			MultiBrotCheckBox = new CheckBox();
 			XCordLabel = new Label();
 			YCordLabel = new Label();
+			SaveNameInput = new TextBox();
+			SaveButton = new Button();
+			IMGExport = new Button();
 			SuspendLayout();
 			// 
 			// StartXInput
@@ -136,7 +159,7 @@ namespace Mandelbrot_Namespace {
 			// 
 			// MandelDisplay
 			// 
-			MandelDisplay.Location = new Point(10, 195);
+			MandelDisplay.Location = new Point(8, 219);
 			MandelDisplay.Name = "MandelDisplay";
 			MandelDisplay.Size = new Size(400, 400);
 			MandelDisplay.TabIndex = 6;
@@ -250,7 +273,7 @@ namespace Mandelbrot_Namespace {
 			// XCordLabel
 			// 
 			XCordLabel.AutoSize = true;
-			XCordLabel.Location = new Point(17, 600);
+			XCordLabel.Location = new Point(12, 619);
 			XCordLabel.Name = "XCordLabel";
 			XCordLabel.Size = new Size(33, 20);
 			XCordLabel.TabIndex = 16;
@@ -259,15 +282,46 @@ namespace Mandelbrot_Namespace {
 			// YCordLabel
 			// 
 			YCordLabel.AutoSize = true;
-			YCordLabel.Location = new Point(265, 601);
+			YCordLabel.Location = new Point(271, 619);
 			YCordLabel.Name = "YCordLabel";
 			YCordLabel.Size = new Size(32, 20);
 			YCordLabel.TabIndex = 17;
 			YCordLabel.Text = "Y: 0";
 			// 
+			// SaveNameInput
+			// 
+			SaveNameInput.Location = new Point(12, 181);
+			SaveNameInput.Name = "SaveNameInput";
+			SaveNameInput.Size = new Size(125, 27);
+			SaveNameInput.TabIndex = 18;
+			SaveNameInput.Text = "Save1";
+			// 
+			// SaveButton
+			// 
+			SaveButton.Location = new Point(147, 181);
+			SaveButton.Name = "SaveButton";
+			SaveButton.Size = new Size(94, 29);
+			SaveButton.TabIndex = 19;
+			SaveButton.Text = "Save";
+			SaveButton.UseVisualStyleBackColor = true;
+			SaveButton.Click += SaveClicked;
+			// 
+			// IMGExport
+			// 
+			IMGExport.Location = new Point(259, 181);
+			IMGExport.Name = "IMGExport";
+			IMGExport.Size = new Size(140, 29);
+			IMGExport.TabIndex = 20;
+			IMGExport.Text = "Export to img";
+			IMGExport.UseVisualStyleBackColor = true;
+			IMGExport.Click += IMGExportClicked;
+			// 
 			// Mandebrot_class
 			// 
-			ClientSize = new Size(420, 630);
+			ClientSize = new Size(420, 648);
+			Controls.Add(IMGExport);
+			Controls.Add(SaveButton);
+			Controls.Add(SaveNameInput);
 			Controls.Add(YCordLabel);
 			Controls.Add(XCordLabel);
 			Controls.Add(MultiBrotCheckBox);
@@ -430,14 +484,6 @@ namespace Mandelbrot_Namespace {
 		// List of hardcoded examples with their values
 		private void SelectExampleListChanged(object sender, EventArgs e) {
 			switch (SelectExampleList.SelectedItem) {
-				case "Default":
-					StartXInput.Text = "0";
-					StartYInput.Text = "0";
-					ScaleInput.Text = "0.01";
-					MaxTriesInput.Text = "100";
-					SelectColorSchemeList.SelectedIndex = 0;
-					MultiBrotCheckBox.Checked = false;
-					break;
 				case "Heat":
 					StartXInput.Text = "-0.014";
 					StartYInput.Text = "0.74";
@@ -518,11 +564,61 @@ namespace Mandelbrot_Namespace {
 					SelectColorSchemeList.SelectedIndex = 0;
 					MultiBrotCheckBox.Checked = false;
 					break;
+				case "Default":
+					StartXInput.Text = "0";
+					StartYInput.Text = "0";
+					ScaleInput.Text = "0.01";
+					MaxTriesInput.Text = "100";
+					SelectColorSchemeList.SelectedIndex = 0;
+					MultiBrotCheckBox.Checked = false;
+					break;
+				default:
+					foreach(Save s in Saves) {
+						if(s.Name == SelectExampleList.SelectedItem.ToString()) {
+							StartXInput.Text = s.XStart;
+							StartYInput.Text = s.YStart;
+							ScaleInput.Text = s.Scale;
+							MaxTriesInput.Text = s.MaxTries;
+							SelectColorSchemeList.SelectedIndex = s.ColorIndex;
+							MultiBrotCheckBox.Checked = s.MultiBrotEnable;
+							MultiBrotInput.Text = s.MultiBrot;
+							break;
+						}
+					}
+					break;
 			}
 			RenderMandelImage();
 		}
 		private void SelectColorSchemeListChanged(object sender, EventArgs e) {
 			if (AutoUpdateCheckBox.Checked) RenderMandelImage();
+		}
+
+		private void SaveClicked(object sender, EventArgs e) {
+			Saves.Add(new Save {
+				Name = SaveNameInput.Text,
+				XStart = StartXInput.Text,
+				YStart = StartYInput.Text,
+				Scale = ScaleInput.Text,
+				MaxTries = MaxTriesInput.Text,
+				MultiBrot = MultiBrotInput.Text,
+				MultiBrotEnable = MultiBrotCheckBox.Checked,
+				ColorIndex = SelectColorSchemeList.SelectedIndex
+			});
+			SelectExampleList.Items.Add(SaveNameInput.Text);
+		}
+
+		private void IMGExportClicked(object sender, EventArgs e) {
+			SaveFileDialog f = new() {
+				Filter = "Jpeg Image| *.jpg",
+				Title = "Save Current Image"
+			};
+			f.ShowDialog();
+
+			if(f.FileName != "") {
+				FileStream fs = (FileStream)f.OpenFile();
+				MandelDisplay.Image.Save(fs, ImageFormat.Jpeg);
+				MessageBox.Show("File saved succesfully", "Jpeg Image Export");
+			}
 		}
 	}
 }
@@ -536,5 +632,7 @@ In addition to the requirements specified in Appendix A, we have also added the 
 	- The ability to drag your mose to move the image. Please note that when doing this the render mechanism isn't as fast,
 		due to the needed calculation so holding the mouse still or releasing it, will display the new image. 
 	- Lots of example's and options to change colorscheme 
-	- A auto refresh option when changing input fields, with on/off toggle
+	- Am auto refresh option when changing input fields, with on/off toggle
+	- An option to save your found configurations 
+	- An option to export your current picture to a file
 */
